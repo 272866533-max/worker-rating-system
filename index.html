@@ -1,0 +1,977 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>外包工评级管理系统</title>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#f5f5f3;--sf:#ffffff;--bd:#e2e0d8;--t1:#1a1a18;--t2:#4a4a46;--t3:#888881;--b6:#185fa5;--g6:#3b6d11;--a6:#854f0b;--r6:#a32d2d;--p6:#534ab7;--rd:10px;--rL:14px}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--t1);font-size:14px;line-height:1.6}
+.app{max-width:1160px;margin:0 auto;padding:22px 18px 60px}
+header{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;flex-wrap:wrap;gap:12px}
+header h1{font-size:18px;font-weight:700;display:flex;align-items:center;gap:10px}
+.sync-dot{width:8px;height:8px;border-radius:50%;background:#a32d2d;display:inline-block;transition:background .3s}
+.sync-dot.ok{background:#3b6d11}
+.acts{display:flex;gap:8px;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 16px;border-radius:var(--rd);border:0.5px solid var(--bd);background:var(--sf);color:var(--t1);font-size:13px;cursor:pointer;font-weight:500;transition:all .15s}
+.btn:hover{border-color:#a8a69e}
+.btn-primary{background:var(--b6);color:#fff;border-color:var(--b6)}
+.btn-primary:hover{background:#0c447c}
+.btn-sm{padding:4px 10px;font-size:12px}
+.btn-green{background:var(--g6);color:#fff;border-color:var(--g6)}
+.btn-green:hover{background:#27500a}
+.statrow{display:grid;grid-template-columns:repeat(4,1fr);gap:13px;margin-bottom:22px}
+.stat{background:var(--sf);border-radius:var(--rL);padding:15px 18px;border:0.5px solid var(--bd)}
+.stat .lbl{font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:0.5px;font-weight:600;margin-bottom:3px}
+.stat .val{font-size:26px;font-weight:700}
+.stat .sub{font-size:11px;color:var(--t3);margin-top:2px}
+.lvb{display:flex;gap:4px;margin-top:7px;align-items:center;flex-wrap:wrap}
+.lv{display:inline-flex;align-items:center;justify-content:center;width:24px;height:20px;border-radius:3px;font-size:10px;font-weight:800;color:#fff}
+.lvS{background:var(--p6)}.lvA{background:var(--b6)}.lvB{background:var(--g6)}.lvC{background:var(--a6)}.lvD{background:var(--r6)}.lvN{background:#d3d1c7;color:var(--t3)}
+.lvc{font-size:13px;font-weight:700}
+.toolbar{display:flex;gap:9px;margin-bottom:13px;flex-wrap:wrap;align-items:center}
+.sch{flex:1;min-width:170px;padding:7px 13px;border-radius:var(--rd);border:0.5px solid var(--bd);background:var(--sf);font-size:13px;outline:none}
+.sch:focus{border-color:var(--b6)}
+.fsel{padding:6px 11px;border-radius:var(--rd);border:0.5px solid var(--bd);background:var(--sf);font-size:13px;color:var(--t1);outline:none;cursor:pointer}
+.tw{background:var(--sf);border-radius:var(--rL);border:0.5px solid var(--bd);overflow:hidden}
+table{width:100%;border-collapse:collapse;table-layout:fixed}
+th{text-align:left;padding:9px 13px;font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:0.4px;background:#fafaf5;border-bottom:0.5px solid var(--bd)}
+td{padding:9px 13px;font-size:13px;border-bottom:0.5px solid #f1f0ea;vertical-align:middle}
+tr:hover td{background:#fdfdfb}
+tr:last-child td{border-bottom:none}
+.nc{display:flex;align-items:center;gap:9px}
+.av{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;flex-shrink:0}
+.nm{font-weight:600;font-size:13px}
+.co{font-size:11px;color:var(--t3)}
+.badge{display:inline-flex;padding:2px 9px;border-radius:11px;font-size:11px;font-weight:700}
+.bga{background:#eaf3de;color:#27500a}.bgt{background:#faeeda;color:#854f0b}.bge{background:#f1f0ea;color:#888881}
+.stars{display:inline-flex;gap:1px;vertical-align:middle}
+.star{width:12px;height:12px}
+.actns{display:flex;gap:5px}
+.mo{position:fixed;inset:0;background:rgba(0,0,0,0.33);z-index:100;display:none;align-items:flex-start;justify-content:center;padding:30px 14px;overflow-y:auto}
+.mo.show{display:flex}
+.modal{background:var(--sf);border-radius:var(--rL);width:100%;max-width:680px;border:0.5px solid var(--bd);overflow:hidden;animation:su .2s ease}
+@keyframes su{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}
+.mh{display:flex;align-items:center;justify-content:space-between;padding:15px 20px;border-bottom:0.5px solid var(--bd)}
+.mh h2{font-size:15px;font-weight:700}
+.mc{width:26px;height:26px;border-radius:50%;border:none;background:transparent;cursor:pointer;font-size:17px;color:var(--t3);display:flex;align-items:center;justify-content:center}
+.mc:hover{background:var(--bg)}
+.mb{padding:17px 20px;max-height:68vh;overflow-y:auto}
+.mf{display:flex;justify-content:flex-end;gap:8px;padding:11px 20px;border-top:0.5px solid var(--bd);background:#fafaf5}
+.frm{display:grid;grid-template-columns:1fr 1fr;gap:13px}
+.fg{display:flex;flex-direction:column;gap:4px}
+.fg.full{grid-column:1/-1}
+.fg label{font-size:11px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:0.4px}
+.fg input,.fg select,.fg textarea{padding:7px 11px;border-radius:var(--rd);border:0.5px solid var(--bd);font-size:13px;outline:none;background:var(--sf);color:var(--t1);font-family:inherit}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--b6)}
+.fg textarea{resize:vertical;min-height:44px}
+.rs{margin-top:16px;padding-top:15px;border-top:0.5px solid var(--bd)}
+.rs h3{font-size:13px;font-weight:700;margin-bottom:11px;color:var(--t2)}
+.rr{padding:14px 0;border-bottom:0.5px solid #f1f0ea}
+.rr:last-child{border-bottom:none}
+.rr .rl{font-size:13px;font-weight:700;color:var(--t1);letter-spacing:0.2px;display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.rr .rs2{display:flex;gap:16px;align-items:flex-start;padding-left:4px}
+.rr .rs2 .opt{display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;flex:1;max-width:120px}
+.rr .rs2 .opt .s{width:42px;height:42px;border-radius:50%;border:2.5px solid var(--bd);background:var(--sf);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;color:var(--t3);transition:all .18s;user-select:none;cursor:pointer}
+.rr .rs2 .opt .s.on{background:var(--a6);border-color:var(--a6);color:#fff;box-shadow:0 2px 8px rgba(133,79,11,0.25)}
+.rr .rs2 .opt .s:hover:not(.on){border-color:var(--a6);background:#fffbe6;transform:scale(1.08)}
+.rr .rs2 .opt .optLbl{font-size:11px;color:var(--t3);text-align:center;line-height:1.4;font-weight:500;transition:all .15s;padding:2px 4px;border-radius:4px;max-width:100px}
+.rr .rs2 .opt .optLbl.active{background:var(--a6);color:#fff;font-weight:700}
+.rr .rcol{margin-top:8px;font-size:11px;color:var(--a6);line-height:1.6;display:none;padding:6px 10px;background:#fffbe6;border-radius:6px;border-left:3px solid var(--a6)}
+.rr .rcol.show{display:block}
+.subRow,.subLbl{display:none}
+.dg{display:grid;grid-template-columns:1fr 1fr;gap:9px 20px;margin-bottom:14px}
+.di .dl{font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:0.4px}
+.di .dv{font-size:14px;font-weight:600}
+.rb{display:flex;align-items:center;gap:9px;margin-bottom:7px}
+.rb .rbl{font-size:12px;color:var(--t2);min-width:76px}
+.rb .rbb{flex:1;height:7px;background:#f1f0ea;border-radius:4px;overflow:hidden}
+.rb .rbf{height:100%;border-radius:4px}
+.rb .rbs{font-size:12px;font-weight:700;min-width:18px;text-align:right}
+.empty{text-align:center;padding:44px 18px;color:var(--t3);font-size:14px}
+.toast{position:fixed;bottom:18px;right:18px;padding:9px 17px;border-radius:var(--rd);background:var(--t1);color:#fff;font-size:13px;font-weight:600;z-index:200;opacity:0;transform:translateY(6px);transition:all .2s}
+.toast.show{opacity:1;transform:translateY(0)}
+.sync-bar{background:var(--sf);border:0.5px solid var(--bd);border-radius:var(--rL);padding:14px 18px;margin-bottom:22px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+.sync-bar .sb-left{display:flex;align-items:center;gap:12px}
+.sync-bar .sb-label{font-size:13px;font-weight:600;color:var(--t2)}
+.sync-bar .sb-status{font-size:12px;color:var(--t3)}
+.sync-bar .sb-right{display:flex;gap:8px;flex-wrap:wrap}
+@media(max-width:640px){.statrow{grid-template-columns:1fr 1fr}.frm{grid-template-columns:1fr}.dg{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- 同步工具栏 -->
+  <div class="sync-bar" id="syncBar">
+    <div class="sb-left">
+      <span class="sync-dot" id="syncDot" title="数据存储状态"></span>
+      <span class="sb-label">数据模式：</span>
+      <span class="sb-status" id="syncStatus">本地存储（自动保存）</span>
+    </div>
+    <div class="sb-right">
+      <button class="btn btn-sm" onclick="exportJSON()">📤 导出数据</button>
+      <button class="btn btn-sm btn-green" onclick="importJSON()">📥 导入数据</button>
+      <button class="btn btn-sm" onclick="showFirebaseSetup()">☁️ 云端同步</button>
+    </div>
+  </div>
+
+  <header>
+    <h1>外包工评级管理</h1>
+    <div class="acts">
+      <button class="btn" onclick="exportCSV()">导出 CSV</button>
+      <button class="btn btn-primary" onclick="openAdd()">+ 新增人员</button>
+    </div>
+  </header>
+
+  <div class="statrow" id="statsArea"></div>
+
+  <div class="toolbar">
+    <input type="text" class="sch" placeholder="搜索姓名、公司、工号..." id="searchInp" oninput="render()">
+    <select class="fsel" id="fCompany" onchange="render()">
+      <option value="">全部公司</option>
+      <option>Attal</option>
+      <option>Manpower</option>
+      <option>Synergie</option>
+      <option>Adecco</option>
+      <option>Randstad</option>
+    </select>
+    <select class="fsel" id="fStatus" onchange="render()">
+      <option value="">全部状态</option>
+      <option>在职</option>
+      <option>试用</option>
+    </select>
+    <select class="fsel" id="fLevel" onchange="render()">
+      <option value="">全部评级</option>
+      <option>S</option><option>A</option><option>B</option><option>C</option><option>未评</option>
+    </select>
+    <label class="fsel" style="cursor:pointer;display:flex;align-items:center;gap:4px;font-size:13px;color:var(--t2)">
+      <input type="checkbox" id="showProbation" onchange="render()"> 显示试用期
+    </label>
+  </div>
+
+  <div class="tw">
+    <table>
+      <thead><tr>
+        <th style="width:24%">姓名 / 工号</th>
+        <th style="width:14%">外包公司</th>
+        <th style="width:11%">职务</th>
+        <th style="width:10%">开始日期</th>
+        <th style="width:10%">结束日期</th>
+        <th style="width:8%">状态</th>
+        <th style="width:9%">综合评分</th>
+        <th style="width:6%">评级</th>
+        <th style="width:8%">操作</th>
+      </tr></thead>
+      <tbody id="tb"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- 新增/编辑弹窗 -->
+<div class="mo" id="formModal">
+  <div class="modal">
+    <div class="mh"><h2 id="modalTit">新增人员</h2><button class="mc" onclick="closeM('formModal')">×</button></div>
+    <div class="mb">
+      <div class="frm">
+        <div class="fg"><label>姓名 *</label><input id="fName" placeholder="请输入姓名"></div>
+        <div class="fg"><label>工号</label><input id="fCode" placeholder="如 RM-0042"></div>
+        <div class="fg"><label>外包公司 *</label>
+          <select id="fCompany2"><option value="">请选择</option><option>Attal</option><option>Manpower</option><option>Synergie</option><option>Adecco</option><option>Randstad</option></select>
+        </div>
+        <div class="fg"><label>职务</label><input id="fPos" value="仓库操作工"></div>
+        <div class="fg"><label>合同开始日期 *</label><input type="date" id="fStart"></div>
+        <div class="fg"><label>合同结束日期</label><input type="date" id="fEnd"></div>
+        <div class="fg"><label>工作状况</label>
+          <select id="fStatus2"><option>在职</option><option>试用</option></select>
+        </div>
+        <div class="fg full"><label>备注</label><textarea id="fRemark" placeholder="其他信息..."></textarea></div>
+      </div>
+      <div class="rs"><h3>评分（点击圆圈 1-5 分）</h3><div id="rateInputs"></div></div>
+    </div>
+    <div class="mf">
+      <button class="btn" onclick="closeM('formModal')">取消</button>
+      <button class="btn btn-primary" onclick="saveW()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 详情弹窗 -->
+<div class="mo" id="detailModal">
+  <div class="modal" style="max-width:520px;">
+    <div class="mh"><h2>人员详情</h2><button class="mc" onclick="closeM('detailModal')">×</button></div>
+    <div class="mb" id="detailBd"></div>
+    <div class="mf">
+      <button class="btn" onclick="closeM('detailModal')">关闭</button>
+      <button class="btn btn-primary" id="btnEditFromDetail">编辑</button>
+    </div>
+  </div>
+</div>
+
+<!-- Firebase 设置弹窗 -->
+<div class="mo" id="fbModal">
+  <div class="modal">
+    <div class="mh"><h2>☁️ 云端同步设置</h2><button class="mc" onclick="closeM('fbModal')">×</button></div>
+    <div class="mb">
+      <p style="font-size:13px;color:var(--t2);line-height:1.7;margin-bottom:16px">
+        开启云端同步后，多台电脑可<strong>实时</strong>看到同一份数据。只需 3 步：
+      </p>
+      <div style="display:flex;gap:8px;margin-bottom:8px">
+        <div style="width:22px;height:22px;border-radius:50%;background:var(--b6);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">1</div>
+        <div style="font-size:13px;color:var(--t2)">打开 <a href="https://console.firebase.google.com/" target="_blank">Firebase 控制台</a> → 创建项目 → 建 Realtime Database（测试模式）</div>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:8px">
+        <div style="width:22px;height:22px;border-radius:50%;background:var(--b6);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">2</div>
+        <div style="font-size:13px;color:var(--t2)">添加 Web 应用 → 复制 <code style="background:#f1f0ea;padding:2px 6px;border-radius:3px;font-size:12px">firebaseConfig</code></div>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:16px">
+        <div style="width:22px;height:22px;border-radius:50%;background:var(--b6);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">3</div>
+        <div style="font-size:13px;color:var(--t2)">粘贴到下方，点"连接"</div>
+      </div>
+      <textarea id="configInput" style="width:100%;min-height:100px;border-radius:var(--rd);border:0.5px solid var(--bd);padding:10px;font-size:12px;font-family:monospace;background:var(--sf)" placeholder="粘贴 firebaseConfig，例如：
+{
+  apiKey: 'AIza...',
+  databaseURL: 'https://xxx.firebaseio.com',
+  projectId: 'roma-rating',
+  ...
+}"></textarea>
+      <div style="margin-top:12px;font-size:12px;color:var(--t3)">
+        💡 不想上云？直接用"导出/导入数据"按钮在电脑间传递即可。
+      </div>
+    </div>
+    <div class="mf">
+      <button class="btn" onclick="closeM('fbModal')">取消</button>
+      <button class="btn btn-primary" onclick="connectFirebase()">连接云端</button>
+    </div>
+  </div>
+</div>
+
+<!-- 隐藏的文件输入 -->
+<input type="file" id="jsonFileInput" accept=".json" style="display:none" onchange="handleImport(event)">
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ===== 评分维度（6大项 + 考勤，3级评分） ===== */
+var DIMS = [
+  {key:"language",     label:"语言沟通",
+    subs:["母语/精通","沟通无障碍","交流困难"],
+    levels:["母语或精通当地语言，指令传达零障碍，可协助翻译沟通","能理解日常操作指令，基本沟通无障碍，偶有确认","语言障碍明显，需反复确认或借助手势/翻译沟通"]},
+  {key:"pressure",     label:"抗压能力",
+    subs:["持续高效","基本稳定","难以承压"],
+    levels:["持续高压环境下仍保持高效，情绪波动为零，无抱怨","能完成常规工时，高峰期效率略有下降但可接受","轻微压力即出现情绪波动，无法完成连续作业，频繁抱怨"]},
+  {key:"cooperation",  label:"配合度",
+    subs:["主动配合","基本配合","配合度低"],
+    levels:["以公司目标为优先，无条件配合排班及加班安排，态度积极","一般情况下能配合加班和班次调整，偶有保留但可接受","拒绝加班及多班次安排，需反复沟通才勉强配合，态度消极"]},
+  {key:"adaptability", label:"可塑性",
+    subs:["多岗胜任","愿意学习","固定岗位"],
+    levels:["全流程熟练，可独立胜任多岗位，学习能力强，接近正式工水平","愿意尝试新岗位，能在指导下掌握新流程，学习态度积极","只做固定岗位，拒绝学习新流程或承担新职责，适应性差"]},
+  {key:"proactivity",  label:"自主学习",
+    subs:["主动预判","需指令驱动","无主动性"],
+    levels:["时刻关注作业状态，主动沟通解决问题，具备较强预判和应变能力","需明确指令才行动，能完成分配任务但鲜少主动观察或汇报问题","只做被安排的事，问题出现不主动处理，缺乏主观能动性"]},
+  {key:"compliance",   label:"执行纪律",
+    subs:["严格自律","基本遵守","屡犯不改"],
+    levels:["严格自律，主动维护安全与卫生规范，并能监督周围同事遵守","基本遵守公司各项规定，偶有疏漏但经提醒后能及时纠正","多次违反安全/卫生规定，态度消极，经反复提醒仍整改无效"]},
+  {key:"attendance",   label:"到岗出勤",
+    subs:["全勤模范","基本准时","频繁异常"],
+    levels:["全勤或接近全勤，到岗准时，加班配合度高，无无故缺勤","基本按时到岗，偶有请假但提前告知，迟到早退情况较少","频繁缺勤或迟到早退，严重影响作业安排，请假不规范"]}
+];
+var COLORS = {S:"#534ab7",A:"#185fa5",B:"#3b6d11",C:"#854f0b",D:"#a32d2d"};
+
+/* ===== 试用期判断：入职前两天为试用期 ===== */
+function isInProbation(w) {
+  if (!w || !w.startDate) return false;
+  var parts = w.startDate.split("-");
+  if (parts.length !== 3) return false;
+  var start = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
+  var today = new Date();
+  today = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  var diff = (today - start) / (1000 * 60 * 60 * 24);
+  return diff < 2; // 入职不足2天为试用期
+}
+
+/* ===== 初始种子数据（来自Excel） ===== */
+var SEED_DATA = [
+  {id:1,name:'Traore Bouramou',code:'RM-0001',company:'Attal',position:'仓库操作工',startDate:'2026-06-06',endDate:'2026-06-20',status:'在职',remark:'',ratings:{language:0,pressure:0,cooperation:0,adaptability:0,proactivity:0,compliance:0,attendance:0}},
+  {id:2,name:'Erimwionghae Osas Emmanuel',code:'RMTEMP20260045',company:'Attal',position:'仓库操作工',startDate:'2026-05-25',endDate:'2026-06-20',status:'在职',remark:'1 settimana',ratings:{language:0,pressure:0,cooperation:0,adaptability:0,proactivity:0,compliance:0,attendance:0}},
+  {id:3,name:'Mancuso Miriam',code:'RMTEMP20260015',company:'Attal',position:'仓库操作工',startDate:'2026-03-27',endDate:'2026-06-20',status:'在职',remark:'1 个月',ratings:{language:0,pressure:0,cooperation:0,adaptability:0,proactivity:0,compliance:0,attendance:0}},
+  {id:4,name:'Sissoko Modibo',code:'RMTEMP20260016',company:'Attal',position:'仓库操作工',startDate:'2026-03-27',endDate:'2026-06-20',status:'在职',remark:'1 个月',ratings:{language:0,pressure:0,cooperation:0,adaptability:0,proactivity:0,compliance:0,attendance:0}},
+  {id:5,name:'Bara Ozaidou',code:'RM-0005',company:'Attal',position:'仓库操作工',startDate:'2026-06-05',endDate:'2026-06-23',status:'在职',remark:'',ratings:{language:0,pressure:0,cooperation:0,adaptability:0,proactivity:0,compliance:0,attendance:0}},
+  {id:6,name:'Uddin K M Roshed',code:'RMTEMP20260013',company:'Attal',position:'仓库操作工',startDate:'2026-03-03',endDate:'2026-06-24',status:'在职',remark:'1 个月',ratings:{language:0,pressure:0,cooperation:0,adaptability:0,proactivity:0,compliance:0,attendance:0}},
+  {id:7,name:'Sidibe Samou',code:'RMTEMP20260058',company:'Attal',position:'仓库操作工',startDate:'2026-05-22',endDate:'2026-06-25',status:'在职',remark:'2 settimana',ratings:{language:0,pressure:0,cooperation:0,adaptability:0,proactivity:0,compliance:0,attendance:0}},
+  {id:8,name:'Diaw Houssein',code:'RM-0008',company:'Attal',position:'仓库操作工',startDate:'2026-05-29',endDate:'2026-06-25',status:'在职',remark:'2 settimana',ratings:{language:0,pressure:0,cooperation:0,adaptability:0,proactivity:0,compliance:0,attendance:0}},
+  {id:9,name:'Simaga Salim',code:'RMMP2026002',company:'Manpower',position:'仓库操作工',startDate:'',endDate:'2026-06-25',status:'在职',remark:'2 settimana',ratings:{language:0,pressure:0,cooperation:0,adaptability:0,proactivity:0,compliance:0,attendance:0}},
+  {id:10,name:'Niagate Abdoulaye',code:'RMMP2026001',company:'Manpower',position:'仓库操作工',startDate:'',endDate:'2026-06-25',status:'在职',remark:'2 settimana',ratings:{language:0,pressure:0,cooperation:0,adaptability:0,proactivity:0,compliance:0,attendance:0}},
+  {id:11,name:'Anik Imran Hossain',code:'RMTEMP20260055',company:'Attal',position:'仓库操作工',startDate:'2026-04-15',endDate:'2026-06-25',status:'在职',remark:'1 个月',ratings:{language:0,pressure:0,cooperation:0,adaptability:0,proactivity:0,compliance:0,attendance:0}},
+  {id:12,name:'Deao Amadou',code:'RMTEMP20260059',company:'Attal',position:'仓库操作工',startDate:'2026-05-23',endDate:'2026-06-26',status:'在职',remark:'2 settimana',ratings:{language:0,pressure:0,cooperation:0,adaptability:0,proactivity:0,compliance:0,attendance:0}},
+  {id:13,name:'Keita Baba',code:'RMTEMP20260030',company:'Attal',position:'仓库操作工',startDate:'2026-04-13',endDate:'2026-06-27',status:'在职',remark:'3 settimana',ratings:{language:0,pressure:0,cooperation:0,adaptability:0,proactivity:0,compliance:0,attendance:0}},
+  {id:14,name:'Khondoker Bahauddin',code:'RMTEMP20260035',company:'Attal',position:'仓库操作工',startDate:'2026-04-13',endDate:'2026-06-27',status:'在职',remark:'3 settimana',ratings:{language:0,pressure:0,cooperation:0,adaptability:0,proactivity:0,compliance:0,attendance:0}},
+  {id:15,name:'Shafa Shariful Alam',code:'RMTEMP20260025',company:'Attal',position:'仓库操作工',startDate:'2026-04-28',endDate:'2026-06-30',status:'在职',remark:'3 settimana',ratings:{language:0,pressure:0,cooperation:0,adaptability:0,proactivity:0,compliance:0,attendance:0}},
+  {id:16,name:'Gonzalez Rosales Carlos Felix',code:'RMTEMP20260004',company:'Attal',position:'仓库操作工',startDate:'2025-12-16',endDate:'2026-07-01',status:'在职',remark:'1个月',ratings:{language:0,pressure:0,cooperation:0,adaptability:0,proactivity:0,compliance:0,attendance:0}},
+  {id:17,name:'Vicinanza Jacopo',code:'RMTEMP20260060',company:'Attal',position:'仓库操作工',startDate:'2026-04-15',endDate:'2026-07-01',status:'在职',remark:'1 个月',ratings:{language:0,pressure:0,cooperation:0,adaptability:0,proactivity:0,compliance:0,attendance:0}},
+  {id:18,name:'Gaye Mouhamed',code:'RMTEMP20260031',company:'Attal',position:'仓库操作工',startDate:'2026-04-14',endDate:'2026-07-04',status:'在职',remark:'1 mese',ratings:{language:0,pressure:0,cooperation:0,adaptability:0,proactivity:0,compliance:0,attendance:0}},
+  {id:19,name:'Mady Traore',code:'RMTEMP20260048',company:'Attal',position:'仓库操作工',startDate:'2026-04-30',endDate:'2026-07-04',status:'在职',remark:'1 mese',ratings:{language:0,pressure:0,cooperation:0,adaptability:0,proactivity:0,compliance:0,attendance:0}},
+  {id:20,name:'Duop Peter Rule',code:'RMTEMP20260020',company:'Attal',position:'仓库操作工',startDate:'2026-04-10',endDate:'2026-07-06',status:'在职',remark:'1 mese',ratings:{language:0,pressure:0,cooperation:0,adaptability:0,proactivity:0,compliance:0,attendance:0}},
+  {id:21,name:'Sheik Aminul',code:'RMTEMP20260022',company:'Attal',position:'仓库操作工',startDate:'2026-04-30',endDate:'2026-07-11',status:'在职',remark:'1 mese',ratings:{language:0,pressure:0,cooperation:0,adaptability:0,proactivity:0,compliance:0,attendance:0}},
+  {id:22,name:'Di Maulo Federico',code:'RM-0022',company:'Attal',position:'仓库操作工',startDate:'2026-05-29',endDate:'2026-07-11',status:'在职',remark:'1 mese',ratings:{language:0,pressure:0,cooperation:0,adaptability:0,proactivity:0,compliance:0,attendance:0}},
+  {id:23,name:'Manguera Gene Ruwee Ramos',code:'RMTEMP20260014',company:'Attal',position:'仓库操作工',startDate:'2026-02-26',endDate:'2026-07-31',status:'在职',remark:'2 个月',ratings:{language:0,pressure:0,cooperation:0,adaptability:0,proactivity:0,compliance:0,attendance:0}},
+  {id:24,name:'Nayem Md',code:'RMTEMP20260008',company:'Attal',position:'仓库操作工',startDate:'2026-02-27',endDate:'2026-07-31',status:'在职',remark:'2 个月',ratings:{language:0,pressure:0,cooperation:0,adaptability:0,proactivity:0,compliance:0,attendance:0}},
+  {id:25,name:'Sangare Issa',code:'RMTEMP20260009',company:'Attal',position:'仓库操作工',startDate:'2026-02-27',endDate:'2026-07-31',status:'在职',remark:'2 个月',ratings:{language:0,pressure:0,cooperation:0,adaptability:0,proactivity:0,compliance:0,attendance:0}},
+  {id:26,name:'Petrisanti Loredana',code:'RMTEMP20260011',company:'Attal',position:'仓库操作工',startDate:'2026-03-02',endDate:'2026-08-14',status:'在职',remark:'1 个月',ratings:{language:0,pressure:0,cooperation:0,adaptability:0,proactivity:0,compliance:0,attendance:0}},
+  {id:27,name:'Vischetti Mattia',code:'RM-0027',company:'Attal',position:'仓库操作工',startDate:'2026-06-16',endDate:'2026-06-22',status:'在职',remark:'',ratings:{language:0,pressure:0,cooperation:0,adaptability:0,proactivity:0,compliance:0,attendance:0}},
+  {id:28,name:'Serigne Cheikh',code:'RM-0028',company:'Attal',position:'仓库操作工',startDate:'2026-06-16',endDate:'2026-06-22',status:'在职',remark:'',ratings:{language:0,pressure:0,cooperation:0,adaptability:0,proactivity:0,compliance:0,attendance:0}},
+  {id:29,name:'Fall Indiaga',code:'RM-0029',company:'Attal',position:'仓库操作工',startDate:'2026-06-16',endDate:'2026-06-22',status:'在职',remark:'',ratings:{language:0,pressure:0,cooperation:0,adaptability:0,proactivity:0,compliance:0,attendance:0}},
+  {id:30,name:'Traore Modibo',code:'RM-0030',company:'Attal',position:'仓库操作工',startDate:'2026-06-11',endDate:'2026-06-17',status:'在职',remark:'',ratings:{language:0,pressure:0,cooperation:0,adaptability:0,proactivity:0,compliance:0,attendance:0}},
+  {id:31,name:'Arif Furqan',code:'RM-0031',company:'Attal',position:'仓库操作工',startDate:'2026-06-12',endDate:'2026-06-18',status:'在职',remark:'',ratings:{language:0,pressure:0,cooperation:0,adaptability:0,proactivity:0,compliance:0,attendance:0}}
+];
+
+/* ===== 全局状态 ===== */
+var workers = [];
+var nextId = 1;
+var editingId = null;
+var fbConnected = false;
+var fbDb = null;
+var dataMode = "local"; // "local" or "cloud"
+
+/* ===== localStorage 持久化 ===== */
+function saveToLocal() {
+  try {
+    localStorage.setItem("ratingWorkers", JSON.stringify(workers));
+    localStorage.setItem("ratingNextId", String(nextId));
+  } catch(e) {
+    // localStorage full or unavailable - silently fail
+  }
+}
+
+function loadFromLocal() {
+  try {
+    var saved = localStorage.getItem("ratingWorkers");
+    if (saved) {
+      workers = JSON.parse(saved);
+      nextId = parseInt(localStorage.getItem("ratingNextId") || "1");
+      return true;
+    }
+  } catch(e) {}
+  return false;
+}
+
+/* ===== JSON 导出/导入 ===== */
+function exportJSON() {
+  var data = {
+    version: 1,
+    exportDate: new Date().toISOString(),
+    workers: workers,
+    nextId: nextId
+  };
+  var json = JSON.stringify(data, null, 2);
+  var blob = new Blob([json], {type: "application/json;charset=utf-8"});
+  var a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "外包工评级数据_" + new Date().toISOString().slice(0,10) + ".json";
+  a.click();
+  showToast("数据已导出为 JSON 文件");
+}
+
+function importJSON() {
+  document.getElementById("jsonFileInput").click();
+}
+
+function handleImport(event) {
+  var file = event.target.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      var data = JSON.parse(e.target.result);
+      if (!data.workers || !data.workers.length) {
+        showToast("文件中没有有效数据");
+        return;
+      }
+      // Merge: ask user what to do
+      var existingCount = workers.length;
+      var importCount = data.workers.length;
+      if (existingCount > 0) {
+        // Smart merge: update existing by id, add new ones
+        var existingMap = {};
+        for (var i = 0; i < workers.length; i++) {
+          existingMap[workers[i].id] = workers[i];
+        }
+        var newCount = 0;
+        var updateCount = 0;
+        for (var j = 0; j < data.workers.length; j++) {
+          var w = data.workers[j];
+          if (existingMap[w.id]) {
+            // Update existing (imported data takes precedence for ratings)
+            for (var k in w) existingMap[w.id][k] = w[k];
+            updateCount++;
+          } else {
+            workers.push(w);
+            newCount++;
+          }
+        }
+        nextId = Math.max.apply(null, workers.map(function(x){return x.id})) + 1;
+        showToast("导入完成：更新 " + updateCount + " 人，新增 " + newCount + " 人");
+      } else {
+        // No existing data, just load
+        workers = data.workers;
+        nextId = data.nextId || (workers.length > 0 ? Math.max.apply(null, workers.map(function(x){return x.id})) + 1 : 1);
+        showToast("已导入 " + workers.length + " 人数据");
+      }
+      saveToLocal();
+      if (fbConnected) {
+        // Also push to Firebase
+        syncAllToFirebase();
+      }
+      refresh();
+    } catch(err) {
+      showToast("文件格式错误，请选择正确的 JSON 文件");
+    }
+  };
+  reader.readAsText(file);
+  // Reset file input so same file can be re-imported
+  event.target.value = "";
+}
+
+/* ===== Firebase 云端同步 ===== */
+function showFirebaseSetup() {
+  document.getElementById("fbModal").classList.add("show");
+}
+
+function initFirebase(config) {
+  try {
+    // Check if Firebase already initialized
+    if (firebase.apps.length > 0) {
+      // Already initialized, delete and re-init
+      firebase.app().delete().then(function() {
+        firebase.initializeApp(config);
+        setupFirebaseListeners(config);
+      });
+    } else {
+      firebase.initializeApp(config);
+      setupFirebaseListeners(config);
+    }
+  } catch(e) {
+    showToast("连接失败: " + e.message);
+  }
+}
+
+function setupFirebaseListeners(config) {
+  fbDb = firebase.database();
+  fbConnected = true;
+  dataMode = "cloud";
+
+  // Connection status indicator
+  fbDb.ref(".info/connected").on("value", function(snap) {
+    if (snap.val() === true) {
+      document.getElementById("syncDot").classList.add("ok");
+      document.getElementById("syncDot").title = "云端已连接 · 实时同步中";
+      updateSyncBar();
+    } else {
+      fbConnected = false;
+      document.getElementById("syncDot").classList.remove("ok");
+      document.getElementById("syncDot").title = "云端断开";
+      updateSyncBar();
+    }
+  });
+
+  // Listen for workers data (real-time sync)
+  fbDb.ref("workers").on("value", function(snap) {
+    workers = [];
+    if (snap.exists()) {
+      snap.forEach(function(child) {
+        workers.push(child.val());
+      });
+    }
+    // If database is empty, seed initial data
+    if (workers.length === 0) {
+      seedToFirebase();
+    } else {
+      nextId = workers.length > 0 ? Math.max.apply(null, workers.map(function(w){return w.id})) + 1 : 1;
+    }
+    saveToLocal(); // Also keep local copy as backup
+    refresh();
+  });
+
+  document.getElementById("syncBar").style.display = "";
+  updateSyncBar();
+  showToast("云端连接成功！多台电脑可实时同步");
+  closeM("fbModal");
+
+  // Save config for auto-reconnect
+  localStorage.setItem("fbConfig", JSON.stringify(config));
+}
+
+function seedToFirebase() {
+  var updates = {};
+  for (var i = 0; i < SEED_DATA.length; i++) {
+    updates[SEED_DATA[i].id] = SEED_DATA[i];
+  }
+  fbDb.ref("workers").update(updates);
+}
+
+function syncAllToFirebase() {
+  if (!fbDb) return;
+  fbDb.ref("workers").set(null).then(function() {
+    var updates = {};
+    for (var i = 0; i < workers.length; i++) {
+      updates[workers[i].id] = workers[i];
+    }
+    fbDb.ref("workers").update(updates);
+  });
+}
+
+function connectFirebase() {
+  var raw = document.getElementById("configInput").value.trim();
+  if (!raw) { showToast("请粘贴 Firebase 配置"); return; }
+  try {
+    var cleaned = raw.replace(/'/g, '"').replace(/(\w+)\s*:/g, '"$1":');
+    var config = JSON.parse(cleaned);
+    if (!config.databaseURL) { showToast("配置缺少 databaseURL"); return; }
+    initFirebase(config);
+  } catch(e) {
+    try {
+      var config = (new Function("return " + raw))();
+      if (!config.databaseURL) { showToast("配置缺少 databaseURL"); return; }
+      initFirebase(config);
+    } catch(e2) {
+      showToast("配置格式错误，请检查");
+    }
+  }
+}
+
+function updateSyncBar() {
+  var statusEl = document.getElementById("syncStatus");
+  if (dataMode === "cloud" && fbConnected) {
+    statusEl.textContent = "云端同步（实时）";
+    statusEl.style.color = "#3b6d11";
+  } else if (dataMode === "cloud") {
+    statusEl.textContent = "云端模式（断开中）";
+    statusEl.style.color = "#a32d2d";
+  } else {
+    statusEl.textContent = "本地存储（自动保存）";
+    statusEl.style.color = "#4a4a46";
+  }
+}
+
+/* ===== 自动启动 ===== */
+function tryAutoConnect() {
+  // 1. Try to load from localStorage first
+  var hasLocal = loadFromLocal();
+  // 2. Try Firebase auto-reconnect
+  var savedConfig = localStorage.getItem("fbConfig");
+  if (savedConfig) {
+    try {
+      var config = JSON.parse(savedConfig);
+      if (config.databaseURL) {
+        initFirebase(config);
+        return; // Firebase will handle everything
+      }
+    } catch(e) {}
+  }
+  // 3. No cloud config - use local mode
+  if (!hasLocal) {
+    // First time ever - use seed data
+    workers = SEED_DATA.slice();
+    nextId = (workers.length > 0 ? Math.max.apply(null, workers.map(function(w){return w.id})) : 0) + 1;
+  }
+  dataMode = "local";
+  document.getElementById("syncDot").classList.remove("ok");
+  document.getElementById("syncDot").title = "本地存储";
+  updateSyncBar();
+  saveToLocal();
+  refresh();
+}
+
+/* ===== 数据层 ===== */
+function str2color(str) {
+  var cs = [["#e6f1fb","#185fa5"],["#eaf3de","#3b6d11"],["#faeeda","#854f0b"],["#eeedfe","#534ab7"],["#e1f5ee","#0f6e56"],["#fcebeb","#a32d2d"]];
+  var h = 0, i = 0;
+  for (i = 0; i < str.length; i++) h = str.charCodeAt(i) + ((h << 5) - h);
+  var idx = Math.abs(h) % cs.length;
+  return {bg: cs[idx][0], fg: cs[idx][1]};
+}
+
+function calcAvg(r) {
+  if (!r) return 0;
+  var vals = [];
+  var keys = Object.keys(r);
+  for (var i = 0; i < keys.length; i++) { if (r[keys[i]] > 0) vals.push(r[keys[i]]); }
+  if (vals.length === 0) return 0;
+  var sum = 0;
+  for (var j = 0; j < vals.length; j++) sum += vals[j];
+  return sum / vals.length;
+}
+
+function getLevel(avg) {
+  if (avg === 0) return "未评";
+  if (avg >= 2.5) return "S";
+  if (avg >= 2.0) return "A";
+  if (avg >= 1.5) return "B";
+  return "C";
+}
+
+function escH(s) {
+  if (!s) return "";
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+/* ===== Stats ===== */
+function renderStats() {
+  var total = workers.length;
+  var probCount = 0;
+  var trial = 0, ended = 0;
+  var lc = {S:0, A:0, B:0, C:0, D:0, "未评":0};
+  var cos = {};
+  for (var i = 0; i < workers.length; i++) {
+    var w = workers[i];
+    if (isInProbation(w)) { probCount++; continue; } // 试用期不计入统计
+    if (w.status === "试用") trial++;
+    if (w.status === "已结束") ended++;
+    if (w.company) cos[w.company] = true;
+    var avg = calcAvg(w.ratings);
+    var lv = getLevel(avg);
+    lc[lv] = (lc[lv] || 0) + 1;
+  }
+  var cosList = [];
+  var cosKeys = Object.keys(cos);
+  for (var k = 0; k < cosKeys.length; k++) cosList.push(cosKeys[k]);
+  var activeTotal = total - probCount;
+  var pct = activeTotal > 0 ? ((trial / activeTotal) * 100).toFixed(1) : "0.0";
+
+  var probHint = probCount > 0 ? '<div style="font-size:11px;color:var(--t3);margin-top:2px">已隐藏试用期 ' + probCount + ' 人（勾选"显示试用期"可见）</div>' : '';
+
+  document.getElementById("statsArea").innerHTML =
+    '<div class="stat"><div class="lbl">可评级人数</div><div class="val">' + activeTotal + '</div><div class="sub">总计 ' + total + ' 人' + (probCount > 0 ? '（含试用期 ' + probCount + ' 人）' : '') + '</div>' + probHint + '</div>' +
+    '<div class="stat"><div class="lbl">人员级别分布</div><div class="lvb">' +
+      '<span class="lv lvS">S</span><span class="lvc" style="color:#534ab7">' + (lc.S||0) + '</span>' +
+      '<span style="width:8px"></span>' +
+      '<span class="lv lvA">A</span><span class="lvc" style="color:#185fa5">' + (lc.A||0) + '</span>' +
+      '<span style="width:8px"></span>' +
+      '<span class="lv lvB">B</span><span class="lvc" style="color:#3b6d11">' + (lc.B||0) + '</span>' +
+      '<span style="width:8px"></span>' +
+      '<span class="lv lvC">C</span><span class="lvc" style="color:#854f0b">' + (lc.C||0) + '</span>' +
+      '<span style="width:8px"></span>' +
+      '<span class="lv lvD">D</span><span class="lvc" style="color:#a32d2d">' + (lc.D||0) + '</span>' +
+      '<span style="width:8px"></span>' +
+      '<span class="lv lvN">?</span><span class="lvc" style="color:#888881">' + (lc["未评"]||0) + '</span>' +
+    '</div></div>' +
+    '<div class="stat"><div class="lbl">在职人数</div><div class="val">' + (activeTotal - trial - ended) + '</div><div class="sub">试用 ' + trial + ' · 已结束 ' + ended + '</div></div>' +
+    '<div class="stat"><div class="lbl">外包公司</div><div class="val">' + cosKeys.length + '</div><div class="sub">' + cosList.join("、") + '</div></div>';
+}
+
+/* ===== Table ===== */
+function makeStar(filled) {
+  return '<svg class="star" viewBox="0 0 20 20" style="width:12px;height:12px"><path d="M10 2l2.5 5.5L18 8.2l-4 4.1.9 5.7L10 15.5 5.1 18l.9-5.7-4-4.1 5.5-.7z" fill="' + (filled ? "#c8961e" : "#ddd9ce") + '"/></svg>';
+}
+
+function renderStar(avg) {
+  var s = "";
+  var r = Math.round(avg);
+  if (r > 3) r = 3;
+  if (r < 0) r = 0;
+  for (var i = 1; i <= 3; i++) s += makeStar(i <= r);
+  return s;
+}
+
+function render() {
+  var q = (document.getElementById("searchInp").value || "").toLowerCase();
+  var fc = document.getElementById("fCompany").value;
+  var fs = document.getElementById("fStatus").value;
+  var fl = document.getElementById("fLevel").value;
+  var showProb = document.getElementById("showProbation") ? document.getElementById("showProbation").checked : false;
+  var rows = [];
+  for (var i = 0; i < workers.length; i++) {
+    var w = workers[i];
+    // 试用期过滤：默认隐藏试用期人员
+    if (!showProb && isInProbation(w)) continue;
+    if (q) {
+      var hay = (w.name + " " + (w.company||"") + " " + (w.code||"")).toLowerCase();
+      if (hay.indexOf(q) === -1) continue;
+    }
+    if (fc && w.company !== fc) continue;
+    if (fs && w.status !== fs) continue;
+    if (fl) {
+      var avg = calcAvg(w.ratings);
+      if (getLevel(avg) !== fl) continue;
+    }
+    rows.push(w);
+  }
+  var tb = document.getElementById("tb");
+  if (rows.length === 0) {
+    tb.innerHTML = '<tr><td colspan="9"><div class="empty">没有找到匹配的记录</div></td></tr>';
+    return;
+  }
+  var html = "";
+  for (var i = 0; i < rows.length; i++) {
+    var w = rows[i];
+    var avg = calcAvg(w.ratings);
+    var lv = getLevel(avg);
+    var ac = str2color(w.name);
+    var lvlC = COLORS[lv] || "#888881";
+    var badgeClass = w.status === "在职" ? "bga" : (w.status === "试用" ? "bgt" : "bge");
+    html += '<tr>' +
+      '<td><div class="nc"><div class="av" style="background:' + ac.bg + ';color:' + ac.fg + '">' + (w.name ? w.name.charAt(0) : "?") + '</div><div><div class="nm">' + escH(w.name) + '</div><div class="co">' + escH(w.code) + '</div></div></div></td>' +
+      '<td>' + escH(w.company) + '</td>' +
+      '<td>' + escH(w.position || "仓库操作工") + '</td>' +
+      '<td>' + escH(w.startDate) + '</td>' +
+      '<td>' + escH(w.endDate) + '</td>' +
+      '<td><span class="badge ' + badgeClass + '">' + escH(w.status) + '</span></td>' +
+      '<td><span class="stars">' + renderStar(avg) + '</span><span style="font-size:11px;color:#888881;margin-left:4px">' + (avg > 0 ? avg.toFixed(1) : "-") + '</span></td>' +
+      '<td><span style="font-weight:800;color:' + lvlC + ';font-size:14px">' + lv + '</span></td>' +
+      '<td><div class="actns"><button class="btn btn-sm" onclick="viewD(' + w.id + ')">详情</button><button class="btn btn-sm" onclick="openEdit(' + w.id + ')">编辑</button></div></td>' +
+    '</tr>';
+  }
+  tb.innerHTML = html;
+}
+
+/* ===== Form ===== */
+function openAdd() {
+  editingId = null;
+  document.getElementById("modalTit").textContent = "新增人员";
+  clearFrm();
+  buildRates({});
+  document.getElementById("formModal").classList.add("show");
+}
+
+function openEdit(id) {
+  var w = null;
+  for (var i = 0; i < workers.length; i++) if (workers[i].id === id) { w = workers[i]; break; }
+  if (!w) return;
+  editingId = id;
+  document.getElementById("modalTit").textContent = "编辑人员";
+  document.getElementById("fName").value = w.name || "";
+  document.getElementById("fCode").value = w.code || "";
+  document.getElementById("fCompany2").value = w.company || "";
+  document.getElementById("fPos").value = w.position || "仓库操作工";
+  document.getElementById("fStart").value = w.startDate || "";
+  document.getElementById("fEnd").value = w.endDate || "";
+  document.getElementById("fStatus2").value = w.status || "在职";
+  document.getElementById("fRemark").value = w.remark || "";
+  buildRates(w.ratings || {});
+  document.getElementById("formModal").classList.add("show");
+}
+
+function clearFrm() {
+  var ids = ["fName","fCode","fPos","fStart","fEnd","fRemark"];
+  for (var i = 0; i < ids.length; i++) document.getElementById(ids[i]).value = "";
+  document.getElementById("fCompany2").value = "";
+  document.getElementById("fStatus2").value = "在职";
+  document.getElementById("fPos").value = "仓库操作工";
+}
+
+function buildRates(cur) {
+  cur = cur || {};
+  var html = "";
+  for (var i = 0; i < DIMS.length; i++) {
+    var d = DIMS[i];
+    var v = cur[d.key] || 0;
+    var options = "";
+    for (var s = 1; s <= 3; s++) {
+      var on = s <= v ? " on" : "";
+      var lblActive = s <= v ? " active" : "";
+      options += '<div class="opt' + on + '" data-dim="' + d.key + '" data-v="' + s + '" onclick="clkOpt(this)">'
+        + '<div class="s' + on + '" data-dim="' + d.key + '" data-v="' + s + '"><span>' + s + '</span></div>'
+        + '<span class="optLbl' + lblActive + '">' + escH(d.subs[s-1]) + '</span>'
+        + '</div>';
+    }
+    var descText = (v > 0 && d.levels && d.levels[v-1]) ? d.levels[v-1] : "请点击上方圆圈选择 1-3 分";
+    html += '<div class="rr">'
+      + '<div class="rl"><span>' + d.label + '</span>'
+      + '<span id="rsc_' + d.key + '" style="font-size:11px;color:var(--t3);font-weight:400;margin-left:auto">' + (v ? v + "分" : "未评") + '</span></div>'
+      + '<div class="rs2">' + options + '</div>'
+      + '<div class="rcol' + (v ? " show" : "") + '" id="rdesc_' + d.key + '">' + escH(descText) + '</div>'
+      + '</div>';
+  }
+  document.getElementById("rateInputs").innerHTML = html;
+}
+
+function clkOpt(el) {
+  // el = .opt div
+  var dim = el.getAttribute("data-dim");
+  var v = parseInt(el.getAttribute("data-v"));
+  var rs2 = el.parentElement; // .rs2
+  var opts = rs2.querySelectorAll(".opt");
+  for (var i = 0; i < opts.length; i++) {
+    var ov = parseInt(opts[i].getAttribute("data-v"));
+    var on = ov <= v;
+    // toggle .on on .opt
+    if (on) opts[i].classList.add("on"); else opts[i].classList.remove("on");
+    // toggle .on on inner .s
+    var sEl = opts[i].querySelector(".s");
+    if (sEl) {
+      if (on) sEl.classList.add("on"); else sEl.classList.remove("on");
+    }
+    // toggle .active on inner .optLbl
+    var lbl = opts[i].querySelector(".optLbl");
+    if (lbl) {
+      if (on) lbl.classList.add("active"); else lbl.classList.remove("active");
+    }
+  }
+  var scEl = document.getElementById("rsc_" + dim);
+  if (scEl) scEl.textContent = v + "分";
+  // Show level description
+  var descEl = document.getElementById("rdesc_" + dim);
+  if (descEl) {
+    var dObj = null;
+    for (var j = 0; j < DIMS.length; j++) { if (DIMS[j].key === dim) { dObj = DIMS[j]; break; } }
+    if (dObj && dObj.levels && dObj.levels[v-1]) {
+      descEl.textContent = dObj.subs[v-1] + "：" + dObj.levels[v-1];
+      descEl.classList.add("show");
+    }
+  }
+}
+
+function getRates() {
+  var r = {};
+  for (var i = 0; i < DIMS.length; i++) {
+    var key = DIMS[i].key;
+    var maxV = 0;
+    var opts = document.querySelectorAll('.opt[data-dim="' + key + '"].on');
+    for (var j = 0; j < opts.length; j++) {
+      var sv = parseInt(opts[j].getAttribute("data-v")) || 0;
+      if (sv > maxV) maxV = sv;
+    }
+    r[key] = maxV;
+  }
+  return r;
+}
+
+function saveW() {
+  var name = document.getElementById("fName").value.trim();
+  var company = document.getElementById("fCompany2").value;
+  var start = document.getElementById("fStart").value;
+  if (!name) { showToast("请填写姓名"); return; }
+  if (!company) { showToast("请选择外包公司"); return; }
+  if (!start) { showToast("请选择开始日期"); return; }
+  var data = {
+    name: name,
+    company: company,
+    code: document.getElementById("fCode").value.trim() || ("RM-" + String(nextId).padStart(4,"0")),
+    position: document.getElementById("fPos").value || "仓库操作工",
+    startDate: start,
+    endDate: document.getElementById("fEnd").value,
+    status: document.getElementById("fStatus2").value,
+    remark: document.getElementById("fRemark").value.trim(),
+    ratings: getRates()
+  };
+
+  if (editingId) {
+    data.id = editingId;
+    for (var i = 0; i < workers.length; i++) {
+      if (workers[i].id === editingId) {
+        for (var k in data) workers[i][k] = data[k];
+        break;
+      }
+    }
+    showToast("已更新 ✓");
+  } else {
+    data.id = nextId;
+    nextId++;
+    workers.push(data);
+    showToast("已添加 ✓");
+  }
+
+  closeM("formModal");
+
+  // Save based on current mode
+  if (dataMode === "cloud" && fbDb) {
+    fbDb.ref("workers/" + data.id).set(data);
+  }
+  saveToLocal(); // Always save locally as backup
+  refresh();
+}
+
+/* ===== Detail ===== */
+function viewD(id) {
+  var w = null;
+  for (var i = 0; i < workers.length; i++) if (workers[i].id === id) { w = workers[i]; break; }
+  if (!w) return;
+  var avg = calcAvg(w.ratings);
+  var lv = getLevel(avg);
+  var ac = str2color(w.name);
+  var lvlC = COLORS[lv] || "#888881";
+  var badgeClass = w.status === "在职" ? "bga" : (w.status === "试用" ? "bgt" : "bge");
+
+  var bars = "";
+  for (var i = 0; i < DIMS.length; i++) {
+    var d = DIMS[i];
+    var v = (w.ratings && w.ratings[d.key]) || 0;
+    var c = v >= 3 ? "#3b6d11" : (v >= 2 ? "#854f0b" : (v >= 1 ? "#a32d2d" : "#d3d1c7"));
+    var levelDesc = (v > 0 && d.levels && d.levels[v-1]) ? d.levels[v-1] : "未评分";
+    bars += '<div class="rb"><div class="rbl">' + d.label + '</div><div style="flex:1"><div class="rbb"><div class="rbf" style="width:' + (v * 33.33) + '%;background:' + c + '"></div></div><div style="font-size:10px;color:var(--t3);margin-top:2px">' + levelDesc + '</div></div><div class="rbs">' + (v || "-") + '</div></div>';
+  }
+
+  document.getElementById("detailBd").innerHTML =
+    '<div style="display:flex;align-items:center;gap:13px;margin-bottom:16px;">' +
+      '<div class="av" style="width:48px;height:48px;font-size:17px;background:' + ac.bg + ';color:' + ac.fg + '">' + (w.name ? w.name.charAt(0) : "?") + '</div>' +
+      '<div><div style="font-size:16px;font-weight:700">' + escH(w.name) + '</div><div style="font-size:12px;color:#888881">' + escH(w.code) + " · " + escH(w.company) + '</div></div>' +
+      '<div style="margin-left:auto;text-align:center"><span style="font-weight:900;font-size:19px;color:' + lvlC + '">' + lv + '</span><div style="font-size:11px;color:#888881">' + (avg > 0 ? avg.toFixed(1) + " 分" : "未评分") + '</div></div>' +
+    '</div>' +
+    '<div class="dg">' +
+      '<div class="di"><div class="dl">职务</div><div class="dv">' + escH(w.position || "-") + '</div></div>' +
+      '<div class="di"><div class="dl">工作状况</div><div class="dv"><span class="badge ' + badgeClass + '">' + escH(w.status) + '</span></div></div>' +
+      '<div class="di"><div class="dl">开始日期</div><div class="dv">' + escH(w.startDate || "-") + '</div></div>' +
+      '<div class="di"><div class="dl">结束日期</div><div class="dv">' + escH(w.endDate || "未设定") + '</div></div>' +
+    '</div>' +
+    (w.remark ? '<div style="margin-top:11px;padding:9px 13px;background:#fafaf5;border-radius:8px;font-size:12px;color:#4a4a46"><strong>备注：</strong>' + escH(w.remark) + '</div>' : "") +
+    '<div style="margin-top:15px;"><div style="font-size:12px;font-weight:700;color:#4a4a46;margin-bottom:9px;">评分明细</div>' + bars + '</div>';
+
+  document.getElementById("btnEditFromDetail").onclick = function() { closeM("detailModal"); openEdit(id); };
+  document.getElementById("detailModal").classList.add("show");
+}
+
+function closeM(id) {
+  document.getElementById(id).classList.remove("show");
+}
+
+/* ===== CSV Export ===== */
+function exportCSV() {
+  var hd = ["工号","姓名","外包公司","职务","开始日期","结束日期","状态","综合评分","评级"];
+  for (var i = 0; i < DIMS.length; i++) hd.push(DIMS[i].label);
+  var rows = [];
+  for (var j = 0; j < workers.length; j++) {
+    var w = workers[j];
+    var avg = calcAvg(w.ratings);
+    var row = [w.code, w.name, w.company, w.position, w.startDate, w.endDate, w.status, avg > 0 ? avg.toFixed(1) : "", getLevel(avg)];
+    for (var k = 0; k < DIMS.length; k++) row.push((w.ratings && w.ratings[DIMS[k].key]) || 0);
+    rows.push(row);
+  }
+  var csv = "\uFEFF";
+  var all = [hd].concat(rows);
+  for (var r = 0; r < all.length; r++) {
+    var line = "";
+    for (var c = 0; c < all[r].length; c++) {
+      line += "\"" + String(all[r][c]).replace(/"/g, "\"\"") + "\"";
+      if (c < all[r].length - 1) line += ",";
+    }
+    csv += line + "\n";
+  }
+  var blob = new Blob([csv], {type: "text/csv;charset=utf-8"});
+  var a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "外包工评级_" + new Date().toISOString().slice(0,10) + ".csv";
+  a.click();
+  showToast("已导出 CSV");
+}
+
+function showToast(msg) {
+  var t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  setTimeout(function() { t.classList.remove("show"); }, 2000);
+}
+
+function refresh() { renderStats(); render(); }
+
+document.querySelectorAll(".mo").forEach(function(el) {
+  el.addEventListener("click", function(e) { if (e.target === this) closeM(this.id); });
+});
+
+/* ===== 启动 ===== */
+tryAutoConnect();
+</script>
+</body>
+</html>
